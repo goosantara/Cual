@@ -1,151 +1,138 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import io
 
-# Set the title and favicon that appear in the Browser's tab bar.
+# Konfigurasi Halaman Web
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title="Generator Narasi Capaian RO",
+    page_icon="📊",
+    layout="wide"
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# Custom Styling CSS sederhana
+st.markdown("""
+    <style>
+    .main-title { font-size: 26px; font-weight: bold; color: #1E3A8A; margin-bottom: 5px; }
+    .sub-title { font-size: 14px; color: #4B5563; margin-bottom: 25px; }
+    .narasi-box { 
+        background-color: #F9FAFB; 
+        border-left: 4px solid #2563EB; 
+        padding: 15px; 
+        border-radius: 4px; 
+        margin-bottom: 12px;
+        font-family: sans-serif;
+        line-height: 1.6;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+st.markdown('<div class="main-title">📊 Generator Narasi Capaian Rincian Output (RO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Otomasi penyusunan teks laporan capaian fisik dan realisasi RO dari file Excel</div>', unsafe_allow_html=True)
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+uploaded_file = st.file_uploader("Unggah File Excel (.xlsx / .xls)", type=['xlsx', 'xls'])
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+if uploaded_file is not None:
+    try:
+        df = pd.read_excel(uploaded_file)
+        
+        # Standarisasi nama kolom
+        df.columns = df.columns.astype(str).str.lower().str.strip()
+        
+        # Identifikasi kolom target
+        col_ro = next((c for c in df.columns if 'rincian output' in c or c == 'ro' or c == 'b'), df.columns[1])
+        col_kegiatan = next((c for c in df.columns if 'kegiatan' in c or c == 'd'), df.columns[3])
+        col_satuan = next((c for c in df.columns if 'satuan' in c or c == 'g'), df.columns[6])
+        col_tarel = next((c for c in df.columns if 'tarel' in c or c == 'j'), df.columns[9])
+        
+        # Kolom persentase (PCRO & RVRO)
+        col_pcro = next((c for c in df.columns if 'pcro' in c), None)
+        col_rvro = next((c for c in df.columns if 'rvro' in c), None)
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+        if st.button("⚡ Process & Generate Narasi", type="primary"):
+            temp_kegiatan = []
+            current_ro = ""
+            current_pcro = 0.0
+            current_rvro = 0.0
+            
+            hasil_narasi = []
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+            for idx, row in df.iterrows():
+                val_ro = str(row[col_ro]).strip() if pd.notna(row[col_ro]) else ""
+                
+                # Deteksi penanda BATAS
+                if val_ro.upper() == "BATAS":
+                    if current_ro:
+                        gap = abs(current_pcro - current_rvro)
+                        
+                        # Penggabungan daftar kegiatan
+                        if len(temp_kegiatan) > 1:
+                            kegiatan_str = ", ".join(temp_kegiatan[:-1]) + ", dan " + temp_kegiatan[-1]
+                        elif len(temp_kegiatan) == 1:
+                            kegiatan_str = temp_kegiatan[0]
+                        else:
+                            kegiatan_str = ""
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+                        # Penyusunan Pola Kalimat
+                        if current_pcro == 0 and current_rvro == 0:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                        elif current_pcro == 100:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {current_rvro:.2f}% sehingga terdapat gap sebesar {gap:.2f}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu {kegiatan_str}."
+                        else:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {current_pcro:.2f}% dengan RVRO sebesar {current_rvro:.2f}% sehingga terdapat gap sebesar {gap:.2f}%, dikarenakan sudah dilakukan {kegiatan_str}, sedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        
+                        hasil_narasi.append({"RO": current_ro, "Narasi": narasi})
+                    
+                    # Reset state
+                    temp_kegiatan = []
+                    current_ro = ""
+                    continue
+                
+                # Pengumpulan data per kegiatan
+                if val_ro != "":
+                    if not current_ro:
+                        current_ro = val_ro
+                        current_pcro = float(row[col_pcro]) if col_pcro and pd.notna(row[col_pcro]) else 0.0
+                        current_rvro = float(row[col_rvro]) if col_rvro and pd.notna(row[col_rvro]) else 0.0
 
-    return gdp_df
+                    keg = str(row[col_kegiatan]).strip() if pd.notna(row[col_kegiatan]) else ""
+                    tarel = str(row[col_tarel]).strip() if pd.notna(row[col_tarel]) else ""
+                    satuan = str(row[col_satuan]).strip() if pd.notna(row[col_satuan]) else ""
+                    
+                    if keg and keg.lower() != 'nan':
+                        temp_kegiatan.append(f"{keg} {tarel} {satuan}")
 
-gdp_df = get_gdp_data()
+            # Tampilan Hasil di Web
+            st.markdown("---")
+            st.subheader(f"📋 Hasil Generate Narasi ({len(hasil_narasi)} RO)")
+            
+            full_text = ""
+            for item in hasil_narasi:
+                st.markdown(f"""
+                <div class="narasi-box">
+                    <strong>RO {item['RO']}</strong><br>
+                    {item['Narasi']}
+                </div>
+                """, unsafe_allow_html=True)
+                full_text += item['Narasi'] + "\n"
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+            # Action Buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                df_download = pd.DataFrame(hasil_narasi)
+                csv = df_download.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Unduh Seluruh Narasi (.CSV)",
+                    data=csv,
+                    file_name="Hasil_Narasi_RO.csv",
+                    mime="text/csv"
+                )
+            with col2:
+                st.download_button(
+                    label="📥 Unduh File Teks (.TXT)",
+                    data=full_text,
+                    file_name="Hasil_Narasi_RO.txt",
+                    mime="text/plain"
+                )
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+    except Exception as e:
+        st.error(f"Gagal memproses file Excel. Pastikan struktur kolom sesuai. Detail error: {e}")
