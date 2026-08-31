@@ -31,7 +31,7 @@ if uploaded_file is not None:
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         else:
-            df = pd.read_excel(uploaded_file)
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
             
         # 2. Hapus baris 'CONTOH' jika ada di baris pertama
         if str(df.iloc[0, 0]).upper() == 'CONTOH':
