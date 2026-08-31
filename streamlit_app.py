@@ -147,3 +147,199 @@ with st.sidebar:
     uploaded_file = st.file_uploader(
         "Pilih File Excel (.xlsx / .csv)", 
         type=['xlsx', 'xls', 'csv']
+    )
+    
+    st.markdown("---")
+    st.markdown("### ⚙️ Pengaturan Kolom Capaian")
+    has_pcro = st.checkbox("Ambil angka PCRO & RVRO dari Excel", value=False)
+    col_pcro_idx = 12
+    col_rvro_idx = 13
+    
+    if has_pcro:
+        col_pcro_idx = st.number_input("Indeks Kolom PCRO (Contoh: M = 12)", value=12, min_value=0)
+        col_rvro_idx = st.number_input("Indeks Kolom RVRO (Contoh: N = 13)", value=13, min_value=0)
+
+# ==============================================================================
+# 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
+# ==============================================================================
+if uploaded_file is not None:
+    try:
+        # Membaca Data
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
+            
+        # Abaikan baris header 'CONTOH' jika ada di baris pertama
+        if len(df) > 0 and str(df.iloc[0, 0]).strip().upper() == 'CONTOH':
+            df = df.iloc[1:].reset_index(drop=True)
+
+        temp_kegiatan = []
+        current_ro = ""
+        current_pcro_val = 0.0
+        current_rvro_val = 0.0
+        
+        hasil_narasi = []
+
+        for idx, row in df.iterrows():
+            val_ro = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+            
+            # --- DETEKSI KATA "BATAS" ---
+            if val_ro.upper() == "BATAS":
+                if current_ro:
+                    # Rangkaian Kegiatan dengan Tata Bahasa Baku (A, B, dan C)
+                    if len(temp_kegiatan) > 1:
+                        kegiatan_str = ", ".join(temp_kegiatan[:-1]) + ", dan " + temp_kegiatan[-1]
+                    elif len(temp_kegiatan) == 1:
+                        kegiatan_str = temp_kegiatan[0]
+                    else:
+                        kegiatan_str = ""
+                        
+                    # Hitung GAP
+                    gap_val = abs(current_pcro_val - current_rvro_val)
+                    
+                    # Format ke Desimal Indonesia (Koma)
+                    p_str = f"{current_pcro_val:.2f}".replace('.', ',')
+                    r_str = f"{current_rvro_val:.2f}".replace('.', ',')
+                    g_str = f"{gap_val:.2f}".replace('.', ',')
+
+                    # Evaluasi Kondisi & Pembentukan Narasi
+                    if current_pcro_val == 0.0 and current_rvro_val == 0.0:
+                        status_badge = '<span class="ios-badge ios-badge-empty">Belum Dimulai</span>'
+                        status_cat = "Belum Dimulai"
+                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                    elif current_pcro_val >= 100.0:
+                        status_badge = '<span class="ios-badge ios-badge-success">Selesai 100%</span>'
+                        status_cat = "Selesai 100%"
+                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu {kegiatan_str}."
+                    else:
+                        status_badge = f'<span class="ios-badge ios-badge-progress">Berjalan ({p_str}%)</span>'
+                        status_cat = "Dalam Proses"
+                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan {kegiatan_str}, sedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                    
+                    hasil_narasi.append({
+                        "RO": current_ro,
+                        "PCRO": current_pcro_val,
+                        "RVRO": current_rvro_val,
+                        "GAP": gap_val,
+                        "Status": status_cat,
+                        "Badge": status_badge,
+                        "Narasi": narasi
+                    })
+                
+                # Reset penampung untuk RO berikutnya
+                temp_kegiatan = []
+                current_ro = ""
+                current_pcro_val = 0.0
+                current_rvro_val = 0.0
+                continue
+            
+            # --- PENGUMPULAN KEGIATAN PER BARIS ---
+            if val_ro and val_ro.lower() != 'nan':
+                if not current_ro:
+                    current_ro = val_ro
+                    if has_pcro:
+                        try: current_pcro_val = float(row.iloc[col_pcro_idx]) 
+                        except: current_pcro_val = 0.0
+                        
+                        try: current_rvro_val = float(row.iloc[col_rvro_idx])
+                        except: current_rvro_val = 0.0
+
+                # Read Kolom D (Idx 3), Kolom J (Idx 9), Kolom G (Idx 6)
+                keg = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+                tarel = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
+                satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+                
+                # Hanya masukkan kegiatan yang sudah memiliki progres (mengabaikan 0/X)
+                if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
+                    if not tarel.startswith("0/") and tarel != "0":
+                        temp_kegiatan.append(f"{keg} {tarel} {satuan}")
+
+        # ==============================================================================
+        # 5. METRIK RINGKASAN GAYA iOS WIDGET
+        # ==============================================================================
+        total_ro = len(hasil_narasi)
+        ro_selesai = sum(1 for item in hasil_narasi if item["Status"] == "Selesai 100%")
+        ro_proses = sum(1 for item in hasil_narasi if item["Status"] == "Dalam Proses")
+        ro_belum = sum(1 for item in hasil_narasi if item["Status"] == "Belum Dimulai")
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Rincian Output", f"{total_ro} RO")
+        col2.metric("Selesai 100%", f"{ro_selesai} RO", delta=f"{(ro_selesai/total_ro*100 if total_ro else 0):.0f}%")
+        col3.metric("Dalam Proses", f"{ro_proses} RO")
+        col4.metric("Belum Dimulai", f"{ro_belum} RO")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ==============================================================================
+        # 6. FILTER & PENCARIAN
+        # ==============================================================================
+        c_search, c_filter = st.columns([3, 1])
+        with c_search:
+            search_ro = st.text_input("🔍 Cari Kode RO", placeholder="Ketik Kode RO (contoh: 2897.BMA.004)...")
+        with c_filter:
+            filter_st = st.selectbox("Status RO", ["Semua Status", "Selesai 100%", "Dalam Proses", "Belum Dimulai"])
+
+        # Filter Process
+        data_tampil = hasil_narasi
+        if search_ro:
+            data_tampil = [item for item in data_tampil if search_ro.lower() in item["RO"].lower()]
+        if filter_st != "Semua Status":
+            data_tampil = [item for item in data_tampil if item["Status"] == filter_st]
+
+        # ==============================================================================
+        # 7. TAMPILAN NARASI DENGAN TEKS WRAP & AUTO COPAS
+        # ==============================================================================
+        st.markdown(f"### 📋 Daftar Narasi Capaian ({len(data_tampil)} RO)")
+        st.caption("Gunakan tombol **Salin** di sudut kanan atas tiap kotak teks untuk melakukan auto-copas 1-klik.")
+
+        for item in data_tampil:
+            # Wrap dalam iOS Container Card
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 700; font-size: 16px; color: #4A0E17;">
+                        📍 RO {item['RO']}
+                    </span>
+                    <div>{item['Badge']}</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # st.code() dengan CSS wrapping aktif (Teks Utuh Terbaca & Auto-Copas 1-Klik)
+            st.code(item['Narasi'], language=None)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # ==============================================================================
+        # 8. PUSAT UNDUHAN HASIL
+        # ==============================================================================
+        st.markdown("---")
+        st.markdown("### 📥 Unduh Hasil Narasi")
+        col_down1, col_down2 = st.columns(2)
+        
+        with col_down1:
+            df_export = pd.DataFrame(hasil_narasi)[["RO", "Status", "PCRO", "RVRO", "GAP", "Narasi"]]
+            csv_data = df_export.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📊 Unduh Rekap CSV / Excel",
+                data=csv_data,
+                file_name="Hasil_Narasi_Capaian_RO.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        with col_down2:
+            txt_data = "\n\n".join([item["Narasi"] for item in hasil_narasi])
+            st.download_button(
+                "📄 Unduh Seluruh Teks (.TXT)",
+                data=txt_data,
+                file_name="Hasil_Narasi_Lengkap.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+
+    except Exception as e:
+        st.error(f"⚠️ Terjadi kesalahan pemrosesan. Pastikan library `openpyxl` terpasang. Detail: {e}")
+
+else:
+    # Tampilan saat aplikasi baru dibuka
+    st.info("💡 Silakan upload file Excel `CAPUT 2026` pada menu di sebelah kiri untuk menampilkan narasi otomatis.")
