@@ -2,344 +2,137 @@ import streamlit as st
 import pandas as pd
 import io
 
-# ==============================================================================
-# 1. KONFIGURASI HALAMAN & THEME (iOS + KAIN CUAL BANGKA BELITUNG)
-# ==============================================================================
+# Konfigurasi Halaman Web
 st.set_page_config(
-    page_title="Generator Narasi RO - Cual iOS Edition",
-    page_icon="🌸",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Generator Narasi Capaian RO",
+    page_icon="📊",
+    layout="wide"
 )
 
-# Custom CSS: Kombinasi Estetika iOS (Clean Glassmorphism) & Motif Kain Cual Bangka Belitung (Emas & Marun)
+# Custom Styling CSS sederhana
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-    /* Background Aplikasi - iOS Clean Neutral */
-    .stApp {
-        background-color: #F4F4F7;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
-    }
-
-    /* Header Banner - Motif Kain Cual Bangka Belitung (Marun & Emas) */
-    .cual-header {
-        background: linear-gradient(135deg, #4A0E17 0%, #7A1C36 50%, #1E293B 100%);
-        border-radius: 22px;
-        padding: 30px 35px;
-        color: #FFFFFF;
-        box-shadow: 0 10px 30px rgba(122, 28, 54, 0.2);
-        border: 1px solid rgba(212, 175, 55, 0.4);
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 28px;
-    }
-
-    /* Motif Tenun Emas Cual Trim (Top & Bottom Border) */
-    .cual-header::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 5px;
-        background: repeat-x linear-gradient(90deg, #D4AF37 0%, #FDF0A6 25%, #D4AF37 50%, #B38F24 75%, #D4AF37 100%);
-    }
-    .cual-header::after {
-        content: "";
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 4px;
-        background: repeat-x linear-gradient(90deg, #D4AF37 0%, #FDF0A6 50%, #D4AF37 100%);
-    }
-
-    .cual-title {
-        font-size: 26px;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        color: #FFFFFF;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0;
-    }
-    .cual-subtitle {
-        font-size: 14px;
-        color: #E2E8F0;
-        margin-top: 8px;
-        font-weight: 400;
-    }
-
-    /* Card Container - iOS Frosted Glass Aesthetic */
-    .ios-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 18px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        padding: 22px 26px;
-        margin-bottom: 22px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        transition: all 0.2s ease-in-out;
-    }
-    .ios-card:hover {
-        box-shadow: 0 8px 25px rgba(122, 28, 54, 0.08);
-        border-color: rgba(212, 175, 55, 0.4);
-    }
-
-    /* PERBAIKAN PENTING: Force Text Wrapping agar Narasi Tidak Scroll Samping */
-    div[data-testid="stCodeBlock"] code, 
-    div[data-testid="stCodeBlock"] pre {
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-        overflow-x: hidden !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-        font-size: 14.5px !important;
-        line-height: 1.65 !important;
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        border-radius: 14px !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 16px !important;
-    }
-
-    /* iOS Status Pill Badges */
-    .ios-badge {
-        display: inline-block;
-        padding: 5px 14px;
-        border-radius: 30px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: -0.2px;
-    }
-    .ios-badge-success { background-color: #E6F4EA; color: #137333; border: 1px solid #CEEAD6; }
-    .ios-badge-progress { background-color: #E8F0FE; color: #1A73E8; border: 1px solid #D2E3FC; }
-    .ios-badge-empty { background-color: #F1F3F4; color: #5F6368; border: 1px solid #E8EAED; }
-
-    /* Custom Styling Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #FFFFFF;
-        border-right: 1px solid #E2E8F0;
+    .main-title { font-size: 26px; font-weight: bold; color: #1E3A8A; margin-bottom: 5px; }
+    .sub-title { font-size: 14px; color: #4B5563; margin-bottom: 25px; }
+    .narasi-box { 
+        background-color: #F9FAFB; 
+        border-left: 4px solid #2563EB; 
+        padding: 15px; 
+        border-radius: 4px; 
+        margin-bottom: 12px;
+        font-family: sans-serif;
+        line-height: 1.6;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ==============================================================================
-# 2. HEADER UTAMA (CUAL & IOS DESIGN)
-# ==============================================================================
-st.markdown("""
-    <div class="cual-header">
-        <div class="cual-title">
-            <span>🌸</span> Generator Narasi Capaian Rincian Output (RO)
-        </div>
-        <div class="cual-subtitle">
-            Sistem Otomasi Penyusunan Laporan Capaian Kinerja • Motif Cual Bangka Belitung & iOS Interface
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="main-title">📊 Generator Narasi Capaian Rincian Output (RO)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Otomasi penyusunan teks laporan capaian fisik dan realisasi RO dari file Excel</div>', unsafe_allow_html=True)
 
-# ==============================================================================
-# 3. SIDEBAR UPLOAD & KONTROL
-# ==============================================================================
-with st.sidebar:
-    st.markdown("### 📱 Panel Pengunggahan")
-    st.caption("Unggah file Excel `CAPUT` untuk memproses narasi secara otomatis.")
-    
-    uploaded_file = st.file_uploader(
-        "Pilih File Excel (.xlsx / .csv)", 
-        type=['xlsx', 'xls', 'csv']
-    )
-    
-    st.markdown("---")
-    st.markdown("### ⚙️ Pengaturan Kolom Capaian")
-    has_pcro = st.checkbox("Ambil angka PCRO & RVRO dari Excel", value=False)
-    col_pcro_idx = 12
-    col_rvro_idx = 13
-    
-    if has_pcro:
-        col_pcro_idx = st.number_input("Indeks Kolom PCRO (Contoh: M = 12)", value=12, min_value=0)
-        col_rvro_idx = st.number_input("Indeks Kolom RVRO (Contoh: N = 13)", value=13, min_value=0)
+uploaded_file = st.file_uploader("Unggah File Excel (.xlsx / .xls)", type=['xlsx', 'xls'])
 
-# ==============================================================================
-# 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
-# ==============================================================================
 if uploaded_file is not None:
     try:
-        # Membaca Data
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file, engine='openpyxl')
-            
-        # Abaikan baris header 'CONTOH' jika ada di baris pertama
-        if len(df) > 0 and str(df.iloc[0, 0]).strip().upper() == 'CONTOH':
-            df = df.iloc[1:].reset_index(drop=True)
-
-        temp_kegiatan = []
-        current_ro = ""
-        current_pcro_val = 0.0
-        current_rvro_val = 0.0
+        df = pd.read_excel(uploaded_file)
         
-        hasil_narasi = []
+        # Standarisasi nama kolom
+        df.columns = df.columns.astype(str).str.lower().str.strip()
+        
+        # Identifikasi kolom target
+        col_ro = next((c for c in df.columns if 'rincian output' in c or c == 'ro' or c == 'b'), df.columns[1])
+        col_kegiatan = next((c for c in df.columns if 'kegiatan' in c or c == 'd'), df.columns[3])
+        col_satuan = next((c for c in df.columns if 'satuan' in c or c == 'g'), df.columns[6])
+        col_tarel = next((c for c in df.columns if 'tarel' in c or c == 'j'), df.columns[9])
+        
+        # Kolom persentase (PCRO & RVRO)
+        col_pcro = next((c for c in df.columns if 'pcro' in c), None)
+        col_rvro = next((c for c in df.columns if 'rvro' in c), None)
 
-        for idx, row in df.iterrows():
-            val_ro = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+        if st.button("⚡ Process & Generate Narasi", type="primary"):
+            temp_kegiatan = []
+            current_ro = ""
+            current_pcro = 0.0
+            current_rvro = 0.0
             
-            # --- DETEKSI KATA "BATAS" ---
-            if val_ro.upper() == "BATAS":
-                if current_ro:
-                    # Rangkaian Kegiatan dengan Tata Bahasa Baku (A, B, dan C)
-                    if len(temp_kegiatan) > 1:
-                        kegiatan_str = ", ".join(temp_kegiatan[:-1]) + ", dan " + temp_kegiatan[-1]
-                    elif len(temp_kegiatan) == 1:
-                        kegiatan_str = temp_kegiatan[0]
-                    else:
-                        kegiatan_str = ""
-                        
-                    # Hitung GAP
-                    gap_val = abs(current_pcro_val - current_rvro_val)
-                    
-                    # Format ke Desimal Indonesia (Koma)
-                    p_str = f"{current_pcro_val:.2f}".replace('.', ',')
-                    r_str = f"{current_rvro_val:.2f}".replace('.', ',')
-                    g_str = f"{gap_val:.2f}".replace('.', ',')
+            hasil_narasi = []
 
-                    # Evaluasi Kondisi & Pembentukan Narasi
-                    if current_pcro_val == 0.0 and current_rvro_val == 0.0:
-                        status_badge = '<span class="ios-badge ios-badge-empty">Belum Dimulai</span>'
-                        status_cat = "Belum Dimulai"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
-                    elif current_pcro_val >= 100.0:
-                        status_badge = '<span class="ios-badge ios-badge-success">Selesai 100%</span>'
-                        status_cat = "Selesai 100%"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu {kegiatan_str}."
-                    else:
-                        status_badge = f'<span class="ios-badge ios-badge-progress">Berjalan ({p_str}%)</span>'
-                        status_cat = "Dalam Proses"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan {kegiatan_str}, sedangkan kegiatan lain pada RO {current_ro} belum dimulai."
-                    
-                    hasil_narasi.append({
-                        "RO": current_ro,
-                        "PCRO": current_pcro_val,
-                        "RVRO": current_rvro_val,
-                        "GAP": gap_val,
-                        "Status": status_cat,
-                        "Badge": status_badge,
-                        "Narasi": narasi
-                    })
+            for idx, row in df.iterrows():
+                val_ro = str(row[col_ro]).strip() if pd.notna(row[col_ro]) else ""
                 
-                # Reset penampung untuk RO berikutnya
-                temp_kegiatan = []
-                current_ro = ""
-                current_pcro_val = 0.0
-                current_rvro_val = 0.0
-                continue
-            
-            # --- PENGUMPULAN KEGIATAN PER BARIS ---
-            if val_ro and val_ro.lower() != 'nan':
-                if not current_ro:
-                    current_ro = val_ro
-                    if has_pcro:
-                        try: current_pcro_val = float(row.iloc[col_pcro_idx]) 
-                        except: current_pcro_val = 0.0
+                # Deteksi penanda BATAS
+                if val_ro.upper() == "BATAS":
+                    if current_ro:
+                        gap = abs(current_pcro - current_rvro)
                         
-                        try: current_rvro_val = float(row.iloc[col_rvro_idx])
-                        except: current_rvro_val = 0.0
+                        # Penggabungan daftar kegiatan
+                        if len(temp_kegiatan) > 1:
+                            kegiatan_str = ", ".join(temp_kegiatan[:-1]) + ", dan " + temp_kegiatan[-1]
+                        elif len(temp_kegiatan) == 1:
+                            kegiatan_str = temp_kegiatan[0]
+                        else:
+                            kegiatan_str = ""
 
-                # Read Kolom D (Idx 3), Kolom J (Idx 9), Kolom G (Idx 6)
-                keg = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
-                tarel = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
-                satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+                        # Penyusunan Pola Kalimat
+                        if current_pcro == 0 and current_rvro == 0:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                        elif current_pcro == 100:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {current_rvro:.2f}% sehingga terdapat gap sebesar {gap:.2f}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu {kegiatan_str}."
+                        else:
+                            narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {current_pcro:.2f}% dengan RVRO sebesar {current_rvro:.2f}% sehingga terdapat gap sebesar {gap:.2f}%, dikarenakan sudah dilakukan {kegiatan_str}, sedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        
+                        hasil_narasi.append({"RO": current_ro, "Narasi": narasi})
+                    
+                    # Reset state
+                    temp_kegiatan = []
+                    current_ro = ""
+                    continue
                 
-                # Hanya masukkan kegiatan yang sudah memiliki progres (mengabaikan 0/X)
-                if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    if not tarel.startswith("0/") and tarel != "0":
+                # Pengumpulan data per kegiatan
+                if val_ro != "":
+                    if not current_ro:
+                        current_ro = val_ro
+                        current_pcro = float(row[col_pcro]) if col_pcro and pd.notna(row[col_pcro]) else 0.0
+                        current_rvro = float(row[col_rvro]) if col_rvro and pd.notna(row[col_rvro]) else 0.0
+
+                    keg = str(row[col_kegiatan]).strip() if pd.notna(row[col_kegiatan]) else ""
+                    tarel = str(row[col_tarel]).strip() if pd.notna(row[col_tarel]) else ""
+                    satuan = str(row[col_satuan]).strip() if pd.notna(row[col_satuan]) else ""
+                    
+                    if keg and keg.lower() != 'nan':
                         temp_kegiatan.append(f"{keg} {tarel} {satuan}")
 
-        # ==============================================================================
-        # 5. METRIK RINGKASAN GAYA iOS WIDGET
-        # ==============================================================================
-        total_ro = len(hasil_narasi)
-        ro_selesai = sum(1 for item in hasil_narasi if item["Status"] == "Selesai 100%")
-        ro_proses = sum(1 for item in hasil_narasi if item["Status"] == "Dalam Proses")
-        ro_belum = sum(1 for item in hasil_narasi if item["Status"] == "Belum Dimulai")
-
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Rincian Output", f"{total_ro} RO")
-        col2.metric("Selesai 100%", f"{ro_selesai} RO", delta=f"{(ro_selesai/total_ro*100 if total_ro else 0):.0f}%")
-        col3.metric("Dalam Proses", f"{ro_proses} RO")
-        col4.metric("Belum Dimulai", f"{ro_belum} RO")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ==============================================================================
-        # 6. FILTER & PENCARIAN
-        # ==============================================================================
-        c_search, c_filter = st.columns([3, 1])
-        with c_search:
-            search_ro = st.text_input("🔍 Cari Kode RO", placeholder="Ketik Kode RO (contoh: 2897.BMA.004)...")
-        with c_filter:
-            filter_st = st.selectbox("Status RO", ["Semua Status", "Selesai 100%", "Dalam Proses", "Belum Dimulai"])
-
-        # Filter Process
-        data_tampil = hasil_narasi
-        if search_ro:
-            data_tampil = [item for item in data_tampil if search_ro.lower() in item["RO"].lower()]
-        if filter_st != "Semua Status":
-            data_tampil = [item for item in data_tampil if item["Status"] == filter_st]
-
-        # ==============================================================================
-        # 7. TAMPILAN NARASI DENGAN TEKS WRAP & AUTO COPAS
-        # ==============================================================================
-        st.markdown(f"### 📋 Daftar Narasi Capaian ({len(data_tampil)} RO)")
-        st.caption("Gunakan tombol **Salin** di sudut kanan atas tiap kotak teks untuk melakukan auto-copas 1-klik.")
-
-        for item in data_tampil:
-            # Wrap dalam iOS Container Card
-            st.markdown(f"""
-            <div style="background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-weight: 700; font-size: 16px; color: #4A0E17;">
-                        📍 RO {item['RO']}
-                    </span>
-                    <div>{item['Badge']}</div>
+            # Tampilan Hasil di Web
+            st.markdown("---")
+            st.subheader(f"📋 Hasil Generate Narasi ({len(hasil_narasi)} RO)")
+            
+            full_text = ""
+            for item in hasil_narasi:
+                st.markdown(f"""
+                <div class="narasi-box">
+                    <strong>RO {item['RO']}</strong><br>
+                    {item['Narasi']}
                 </div>
-            """, unsafe_allow_html=True)
-            
-            # st.code() dengan CSS wrapping aktif (Teks Utuh Terbaca & Auto-Copas 1-Klik)
-            st.code(item['Narasi'], language=None)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+                full_text += item['Narasi'] + "\n"
 
-        # ==============================================================================
-        # 8. PUSAT UNDUHAN HASIL
-        # ==============================================================================
-        st.markdown("---")
-        st.markdown("### 📥 Unduh Hasil Narasi")
-        col_down1, col_down2 = st.columns(2)
-        
-        with col_down1:
-            df_export = pd.DataFrame(hasil_narasi)[["RO", "Status", "PCRO", "RVRO", "GAP", "Narasi"]]
-            csv_data = df_export.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "📊 Unduh Rekap CSV / Excel",
-                data=csv_data,
-                file_name="Hasil_Narasi_Capaian_RO.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-        with col_down2:
-            txt_data = "\n\n".join([item["Narasi"] for item in hasil_narasi])
-            st.download_button(
-                "📄 Unduh Seluruh Teks (.TXT)",
-                data=txt_data,
-                file_name="Hasil_Narasi_Lengkap.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+            # Action Buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                df_download = pd.DataFrame(hasil_narasi)
+                csv = df_download.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Unduh Seluruh Narasi (.CSV)",
+                    data=csv,
+                    file_name="Hasil_Narasi_RO.csv",
+                    mime="text/csv"
+                )
+            with col2:
+                st.download_button(
+                    label="📥 Unduh File Teks (.TXT)",
+                    data=full_text,
+                    file_name="Hasil_Narasi_RO.txt",
+                    mime="text/plain"
+                )
 
     except Exception as e:
-        st.error(f"⚠️ Terjadi kesalahan pemrosesan. Pastikan library `openpyxl` terpasang. Detail: {e}")
-
-else:
-    # Tampilan saat aplikasi baru dibuka
-    st.info("💡 Silakan upload file Excel `CAPUT 2026` pada menu di sebelah kiri untuk menampilkan narasi otomatis.")
+        st.error(f"Gagal memproses file Excel. Pastikan struktur kolom sesuai. Detail error: {e}")
