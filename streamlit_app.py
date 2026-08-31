@@ -227,16 +227,6 @@ def is_tarel_zero(tarel_str):
             pass
     return False
 
-# Fungsi Pembantu Cek Persentase Realisasi Nol (Kolom I)
-def is_realisasi_zero(val):
-    val_str = str(val).strip()
-    if not val_str or val_str.lower() == 'nan':
-        return True
-    try:
-        return float(val_str.replace('%', '').replace(',', '.')) == 0
-    except:
-        return True
-
 # ==============================================================================
 # 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
 # ==============================================================================
@@ -344,10 +334,9 @@ if uploaded_file is not None:
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    if len(row.values) > 8 and is_realisasi_zero(row.iloc[8]):
+                    if is_tarel_zero(tarel):
                         current_has_unstarted = True
-
-                    if not is_tarel_zero(tarel):
+                    else:
                         temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
 
         # ==============================================================================
