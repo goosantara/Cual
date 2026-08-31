@@ -1,27 +1,5 @@
 import streamlit as st
 import pandas as pd
-import base64
-import os
-
-# ==============================================================================
-# 0. FUNGSI PEMBANTU UNTUK MEMUAT LOGO CUAL (BASE64)
-# ==============================================================================
-def get_base64_image(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-    return ""
-
-# Pastikan gambar "logo_cual.jpg" berada di folder yang sama dengan app.py
-logo_b64 = get_base64_image("logo_cual.jpg")
-
-if logo_b64:
-    logo_header_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">'
-    logo_sidebar_html = f'<div style="text-align: center; margin-bottom: 22px;"><img src="data:image/jpeg;base64,{logo_b64}" style="width: 110px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12);"></div>'
-else:
-    # Default emoji jika file gambar tidak ditemukan
-    logo_header_html = '✨'
-    logo_sidebar_html = ''
 
 # ==============================================================================
 # 1. KONFIGURASI HALAMAN & THEME (iOS 26 Glassmorphism Transparent Edition)
@@ -164,16 +142,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. HEADER UTAMA (GLASSMORPHISM + LOGO CUAL)
+# 2. HEADER UTAMA (GLASSMORPHISM)
 # ==============================================================================
-st.markdown(f"""
+st.markdown("""
     <div class="glass-header">
-        <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <div style="margin-right: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px;">
-                {logo_header_html}
-            </div>
-            <h1 class="glass-title" style="margin: 0;">Automasi Capaian Rincian Output (RO)</h1>
-        </div>
+        <h1 class="glass-title">✨ Automasi Capaian Rincian Output (RO)</h1>
         <div class="glass-subtitle">
             Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander), Komentar, dan Copy 1-Klik.
         </div>
@@ -181,12 +154,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SIDEBAR UPLOAD & KONTROL (+ LOGO CUAL)
+# 3. SIDEBAR UPLOAD & KONTROL
 # ==============================================================================
 with st.sidebar:
-    if logo_sidebar_html:
-        st.markdown(logo_sidebar_html, unsafe_allow_html=True)
-        
     st.markdown("### 📱 Panel Pengunggahan")
     uploaded_file = st.file_uploader(
         "Pilih File Excel (.xlsx / .csv)", 
@@ -227,6 +197,17 @@ def is_tarel_zero(tarel_str):
             pass
     return False
 
+# Fungsi Pembantu Cek Persentase Realisasi Nol (Kolom I)
+def is_realisasi_zero(val):
+    val_str = str(val).strip()
+    if not val_str or val_str.lower() == 'nan':
+        return True
+    try:
+        # Hapus simbol % atau koma untuk pengecekan aman
+        return float(val_str.replace('%', '').replace(',', '.')) == 0
+    except:
+        return True
+
 # ==============================================================================
 # 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
 # ==============================================================================
@@ -245,8 +226,6 @@ if uploaded_file is not None:
         current_nama_ro = ""
         current_pcro_val = 0.0
         current_rvro_val = 0.0
-        current_m_val = "0"
-        current_n_val = ""
         current_has_unstarted = False 
         
         hasil_narasi = []
@@ -256,28 +235,29 @@ if uploaded_file is not None:
             
             if val_ro.upper() == "BATAS":
                 if current_ro:
-                    rvro_teks = f"{current_m_val} {current_n_val}".strip()
-                    
+                    # Jika tidak ada kegiatan yang sudah berjalan
                     if len(temp_kegiatan) == 0 or (current_pcro_val == 0.0 and current_rvro_val == 0.0):
                         status_cat = "Belum Dimulai"
-                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 0,00% dengan RVRO sebesar {rvro_teks} sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
                     elif current_pcro_val >= 100.0:
                         kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
                         gap_val = abs(current_pcro_val - current_rvro_val)
+                        r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Selesai 100%"
-                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 100,00% dengan RVRO sebesar {rvro_teks} sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
+                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
                     else:
                         kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
                         gap_val = abs(current_pcro_val - current_rvro_val)
                         p_str = f"{current_pcro_val:.2f}".replace('.', ',')
+                        r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Dalam Proses"
                         
                         if current_has_unstarted:
-                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {rvro_teks} sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
                         else:
-                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {rvro_teks} sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}"
+                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}"
                     
                     hasil_narasi.append({
                         "RO": current_ro,
@@ -286,19 +266,19 @@ if uploaded_file is not None:
                         "Narasi": narasi
                     })
                 
+                # Reset untuk iterasi batas selanjutnya
                 temp_kegiatan = []
                 current_ro = ""
                 current_nama_ro = ""
                 current_pcro_val = 0.0
                 current_rvro_val = 0.0
-                current_m_val = "0"
-                current_n_val = ""
                 current_has_unstarted = False
                 continue
             
             if val_ro and val_ro.lower() != 'nan':
                 if not current_ro:
                     current_ro = val_ro
+                    # Ekstrak Uraian Nama RO 
                     current_nama_ro = str(row.iloc[2]).strip() if len(row.values) > 2 and pd.notna(row.iloc[2]) else ""
                     
                     if has_pcro:
@@ -306,37 +286,16 @@ if uploaded_file is not None:
                         except: current_pcro_val = 0.0
                         try: current_rvro_val = float(row.iloc[col_rvro_idx])
                         except: current_rvro_val = 0.0
-                        
-                    # Ekstraksi Kolom M (Index 12) untuk PCRO Nilai
-                    try:
-                        m_val = row.iloc[12]
-                        if pd.notna(m_val):
-                            if isinstance(m_val, (int, float)):
-                                current_m_val = str(m_val).replace('.', ',')
-                                if current_m_val.endswith(',0'):
-                                    current_m_val = current_m_val[:-2]
-                            else:
-                                current_m_val = str(m_val).strip()
-                        else:
-                            current_m_val = "0"
-                    except:
-                        current_m_val = "0"
-                        
-                    # Ekstraksi Kolom N (Index 13) untuk PCRO Satuan
-                    try:
-                        n_val = row.iloc[13]
-                        current_n_val = str(n_val).strip() if pd.notna(n_val) else ""
-                    except:
-                        current_n_val = ""
 
                 keg = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
                 tarel = str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else ""
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    if is_tarel_zero(tarel):
+                    if len(row.values) > 8 and is_realisasi_zero(row.iloc[8]):
                         current_has_unstarted = True
-                    else:
+
+                    if not is_tarel_zero(tarel):
                         temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
 
         # ==============================================================================
@@ -369,14 +328,16 @@ if uploaded_file is not None:
                 icon = "⚪"
                 
             with st.expander(f"{icon} RO {item['RO']} — {item['Status']}"):
+                # 1. Menampilkan Teks Narasi yang Bisa Dicopy (Kotak Abu-Abu Terang)
                 st.code(item['Narasi'], language=None)
                 
+                # 2. Menampilkan Kotak Komentar Interaktif (Bisa Diketik Langsung & Ter-Update Otomatis)
                 comment_key = f"comment_{item['RO']}"
                 st.text_area(
                     "💬 Catatan / Komentar Tambahan:", 
                     key=comment_key, 
                     height=75,
-                    placeholder="Ketik komentar untuk RO ini (teks yang Anda tulis bisa diblok lalu di-copy, serta otomatis masuk ke Excel)...",
+                    placeholder="Ketik komentar untuk RO ini (teks yang Anda tulis bisa diblok lalu di-copy, serta akan otomatis tersimpan dalam Excel saat diunduh)...",
                     help="Gunakan (Ctrl+C / Cmd+C) untuk Copy teks di kolom ini."
                 )
 
@@ -388,9 +349,11 @@ if uploaded_file is not None:
         col_down1, col_down2 = st.columns(2)
         
         with col_down1:
+            # Mengekstraksi Narasi Beserta Komentar yang Diketik Pengguna ke Dalam Tabel (4 Kolom)
             list_export = []
             for item in hasil_narasi:
                 ro_code = item["RO"]
+                # Memanggil nilai komentar (jika diketik) berdasarkan session_state Streamlit
                 user_comment = st.session_state.get(f"comment_{ro_code}", "")
                 
                 list_export.append({
@@ -401,6 +364,7 @@ if uploaded_file is not None:
                 })
                 
             df_export = pd.DataFrame(list_export)
+            # Menyusun urutan 4 Kolom secara rapi
             df_export = df_export[["Nomor RO", "Uraian Nama RO", "Realisasi", "Catatan / Komentar"]]
             
             csv_data = df_export.to_csv(index=False).encode('utf-8')
@@ -417,6 +381,7 @@ if uploaded_file is not None:
                 ro_code = item["RO"]
                 c_text = st.session_state.get(f"comment_{ro_code}", "")
                 block = item["Narasi"]
+                # Gabungkan dengan catatan/komentar di file TXT jika ada
                 if c_text.strip():
                     block += f"\nCatatan/Komentar: {c_text.strip()}"
                 txt_lines.append(block)
