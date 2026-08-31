@@ -189,6 +189,17 @@ def is_tarel_zero(tarel_str):
             pass
     return False
 
+# Fungsi Pembantu Cek Persentase Realisasi Nol (Kolom I)
+def is_realisasi_zero(val):
+    val_str = str(val).strip()
+    if not val_str or val_str.lower() == 'nan':
+        return True
+    try:
+        # Hapus simbol % atau koma untuk pengecekan aman
+        return float(val_str.replace('%', '').replace(',', '.')) == 0
+    except:
+        return True
+
 # ==============================================================================
 # 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
 # ==============================================================================
@@ -207,6 +218,7 @@ if uploaded_file is not None:
         current_nama_ro = ""
         current_pcro_val = 0.0
         current_rvro_val = 0.0
+        current_has_unstarted = False # Penanda apakah masih ada kegiatan yang 0% di RO tsb
         
         hasil_narasi = []
 
@@ -233,7 +245,12 @@ if uploaded_file is not None:
                         r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Dalam Proses"
-                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        
+                        # Logika dinamis untuk menambahkan/menghapus kalimat penutup sesuai ketersediaan realisasi = 0
+                        if current_has_unstarted:
+                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        else:
+                            narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}"
                     
                     hasil_narasi.append({
                         "RO": current_ro,
@@ -242,12 +259,13 @@ if uploaded_file is not None:
                         "Narasi": narasi
                     })
                 
-                # Reset 
+                # Reset untuk iterasi batas selanjutnya
                 temp_kegiatan = []
                 current_ro = ""
                 current_nama_ro = ""
                 current_pcro_val = 0.0
                 current_rvro_val = 0.0
+                current_has_unstarted = False
                 continue
             
             if val_ro and val_ro.lower() != 'nan':
@@ -267,6 +285,10 @@ if uploaded_file is not None:
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
+                    # Cek apakah kegiatan ini belum dimulai alias realisasi = 0% di Kolom I (Indeks 8)
+                    if len(row.values) > 8 and is_realisasi_zero(row.iloc[8]):
+                        current_has_unstarted = True
+
                     # Hanya masukkan kegiatan yang hasil pembagian tarel-nya > 0 (bukan 0/X atau 0)
                     if not is_tarel_zero(tarel):
                         temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
