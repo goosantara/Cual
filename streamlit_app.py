@@ -140,7 +140,7 @@ st.markdown("""
     <div class="glass-header">
         <h1 class="glass-title">✨ Automasi Capaian Rincian Output (RO)</h1>
         <div class="glass-subtitle">
-            Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander) dan Copy 1-Klik.
+            Masukkan data yang mau digenerate ya, jangan lupa pilih bulannya dulu...
         </div>
     </div>
 """, unsafe_allow_html=True)
