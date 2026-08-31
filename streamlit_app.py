@@ -156,6 +156,15 @@ with st.sidebar:
     )
     
     st.markdown("---")
+    st.markdown("### 🗓️ Pengaturan Waktu")
+    selected_month = st.selectbox(
+        "Bulan Laporan",
+        ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+        index=7 # Default index 7 adalah Agustus
+    )
+    selected_year = st.text_input("Tahun Laporan", value="2026")
+
+    st.markdown("---")
     st.markdown("### ⚙️ Pengaturan Kolom Capaian")
     has_pcro = st.checkbox("Ambil angka PCRO & RVRO dari Excel", value=False)
     col_pcro_idx = 12
@@ -195,7 +204,7 @@ if uploaded_file is not None:
 
         temp_kegiatan = []
         current_ro = ""
-        current_nama_ro = ""  # Tambahan untuk Nama RO
+        current_nama_ro = ""
         current_pcro_val = 0.0
         current_rvro_val = 0.0
         
@@ -209,14 +218,14 @@ if uploaded_file is not None:
                     # Jika tidak ada kegiatan yang sudah berjalan (semua tarel = 0) ATAU PCRO & RVRO = 0
                     if len(temp_kegiatan) == 0 or (current_pcro_val == 0.0 and current_rvro_val == 0.0):
                         status_cat = "Belum Dimulai"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
                     elif current_pcro_val >= 100.0:
                         kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
                         gap_val = abs(current_pcro_val - current_rvro_val)
                         r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Selesai 100%"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
+                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
                     else:
                         kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
                         gap_val = abs(current_pcro_val - current_rvro_val)
@@ -224,7 +233,7 @@ if uploaded_file is not None:
                         r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Dalam Proses"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
                     
                     hasil_narasi.append({
                         "RO": current_ro,
@@ -334,4 +343,4 @@ if uploaded_file is not None:
         st.error(f"⚠️ Terjadi kesalahan. Pastikan library `openpyxl` terpasang. Detail error: {e}")
 
 else:
-    st.info("💡 Silakan unggah file Excel `CAPUT 2026` pada menu kiri untuk memunculkan kotak panel otomatis.")
+    st.info("💡 Silakan unggah file Excel `CAPUT` pada menu kiri untuk memunculkan kotak panel otomatis.")
