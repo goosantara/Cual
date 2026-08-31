@@ -1,27 +1,5 @@
 import streamlit as st
 import pandas as pd
-import base64
-import os
-
-# ==============================================================================
-# 0. FUNGSI PEMBANTU UNTUK MEMUAT LOGO CUAL (BASE64)
-# ==============================================================================
-def get_base64_image(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-    return ""
-
-# Silakan ubah nama gambar logo Anda menjadi "logo_cual.jpg" dan letakkan di folder yang sama
-logo_b64 = get_base64_image("logo_cual.jpg")
-
-if logo_b64:
-    logo_header_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">'
-    logo_sidebar_html = f'<div style="text-align: center; margin-bottom: 22px;"><img src="data:image/jpeg;base64,{logo_b64}" style="width: 110px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12);"></div>'
-else:
-    # Jika file logo_cual.jpg tidak ditemukan, otomatis kembali ke logo emoji default
-    logo_header_html = '✨'
-    logo_sidebar_html = ''
 
 # ==============================================================================
 # 1. KONFIGURASI HALAMAN & THEME (iOS 26 Glassmorphism Transparent Edition)
@@ -164,16 +142,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. HEADER UTAMA (GLASSMORPHISM + LOGO CUAL)
+# 2. HEADER UTAMA (GLASSMORPHISM)
 # ==============================================================================
-st.markdown(f"""
+st.markdown("""
     <div class="glass-header">
-        <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <div style="margin-right: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px;">
-                {logo_header_html}
-            </div>
-            <h1 class="glass-title" style="margin: 0;">Automasi Capaian Rincian Output (RO)</h1>
-        </div>
+        <h1 class="glass-title">✨ Automasi Capaian Rincian Output (RO)</h1>
         <div class="glass-subtitle">
             Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander), Komentar, dan Copy 1-Klik.
         </div>
@@ -181,12 +154,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SIDEBAR UPLOAD & KONTROL (+ LOGO CUAL)
+# 3. SIDEBAR UPLOAD & KONTROL
 # ==============================================================================
 with st.sidebar:
-    if logo_sidebar_html:
-        st.markdown(logo_sidebar_html, unsafe_allow_html=True)
-        
     st.markdown("### 📱 Panel Pengunggahan")
     uploaded_file = st.file_uploader(
         "Pilih File Excel (.xlsx / .csv)", 
