@@ -95,6 +95,7 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.85) !important;
         padding: 2px !important;
         box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
+        margin-bottom: 12px !important;
     }
     div[data-testid="stCodeBlock"] pre {
         white-space: pre-wrap !important;
@@ -114,6 +115,13 @@ st.markdown("""
         font-size: 14px !important;
         line-height: 1.38 !important;
         color: #1E293B !important;
+    }
+
+    /* Kustomisasi Text Area Komen */
+    div[data-baseweb="textarea"] {
+        border-radius: 12px !important;
+        background-color: rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid #CBD5E1 !important;
     }
 
     /* Status Badges */
@@ -140,7 +148,7 @@ st.markdown("""
     <div class="glass-header">
         <h1 class="glass-title">✨ Automasi Capaian Rincian Output (RO)</h1>
         <div class="glass-subtitle">
-            Masukkan data yang mau digenerate ya, jangan lupa pilih bulannya dulu...
+            Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander), Komentar, dan Copy 1-Klik.
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -218,7 +226,7 @@ if uploaded_file is not None:
         current_nama_ro = ""
         current_pcro_val = 0.0
         current_rvro_val = 0.0
-        current_has_unstarted = False # Penanda apakah masih ada kegiatan yang 0% di RO tsb
+        current_has_unstarted = False 
         
         hasil_narasi = []
 
@@ -227,7 +235,7 @@ if uploaded_file is not None:
             
             if val_ro.upper() == "BATAS":
                 if current_ro:
-                    # Jika tidak ada kegiatan yang sudah berjalan (semua tarel = 0) ATAU PCRO & RVRO = 0
+                    # Jika tidak ada kegiatan yang sudah berjalan
                     if len(temp_kegiatan) == 0 or (current_pcro_val == 0.0 and current_rvro_val == 0.0):
                         status_cat = "Belum Dimulai"
                         narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
@@ -246,7 +254,6 @@ if uploaded_file is not None:
                         g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Dalam Proses"
                         
-                        # Logika dinamis untuk menambahkan/menghapus kalimat penutup sesuai ketersediaan realisasi = 0
                         if current_has_unstarted:
                             narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
                         else:
@@ -271,7 +278,7 @@ if uploaded_file is not None:
             if val_ro and val_ro.lower() != 'nan':
                 if not current_ro:
                     current_ro = val_ro
-                    # Ekstrak Uraian Nama RO (biasanya di Kolom C / indeks ke-2)
+                    # Ekstrak Uraian Nama RO 
                     current_nama_ro = str(row.iloc[2]).strip() if len(row.values) > 2 and pd.notna(row.iloc[2]) else ""
                     
                     if has_pcro:
@@ -285,11 +292,9 @@ if uploaded_file is not None:
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    # Cek apakah kegiatan ini belum dimulai alias realisasi = 0% di Kolom I (Indeks 8)
                     if len(row.values) > 8 and is_realisasi_zero(row.iloc[8]):
                         current_has_unstarted = True
 
-                    # Hanya masukkan kegiatan yang hasil pembagian tarel-nya > 0 (bukan 0/X atau 0)
                     if not is_tarel_zero(tarel):
                         temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
 
@@ -309,10 +314,10 @@ if uploaded_file is not None:
             data_tampil = [item for item in data_tampil if item["Status"] == filter_st]
 
         st.markdown(f"### 📋 Daftar Narasi Capaian ({len(data_tampil)} RO)")
-        st.caption("✨ Tekan kotak di bawah ini untuk membuka (expand) teks narasi dan klik tombol ikon Copy di dalam kotak untuk menyalin.")
+        st.caption("✨ Tekan kotak di bawah ini untuk melihat narasi otomatis dan menambahkan komentar tambahan.")
         
         # ==============================================================================
-        # 6. TAMPILAN WRAPPER EXPANDER (AKORDION iOS KACA) & AUTO COPAS
+        # 6. TAMPILAN WRAPPER EXPANDER (AKORDION iOS KACA) & KOTAK KOMENTAR
         # ==============================================================================
         for item in data_tampil:
             if item['Status'] == 'Selesai 100%': 
@@ -323,25 +328,44 @@ if uploaded_file is not None:
                 icon = "⚪"
                 
             with st.expander(f"{icon} RO {item['RO']} — {item['Status']}"):
+                # 1. Menampilkan Teks Narasi yang Bisa Dicopy (Kotak Abu-Abu Terang)
                 st.code(item['Narasi'], language=None)
+                
+                # 2. Menampilkan Kotak Komentar Interaktif (Bisa Diketik Langsung & Ter-Update Otomatis)
+                comment_key = f"comment_{item['RO']}"
+                st.text_area(
+                    "💬 Catatan / Komentar Tambahan:", 
+                    key=comment_key, 
+                    height=75,
+                    placeholder="Ketik komentar untuk RO ini (teks yang Anda tulis bisa diblok lalu di-copy, serta akan otomatis tersimpan dalam Excel saat diunduh)...",
+                    help="Gunakan (Ctrl+C / Cmd+C) untuk Copy teks di kolom ini."
+                )
 
         # ==============================================================================
-        # 7. PUSAT UNDUHAN HASIL
+        # 7. PUSAT UNDUHAN HASIL MENCANGKUP KOMENTAR
         # ==============================================================================
         st.markdown("---")
         st.markdown("### 📥 Unduh Hasil Keseluruhan (Sekaligus)")
         col_down1, col_down2 = st.columns(2)
         
         with col_down1:
-            # Mengubah format DataFrame agar sesuai instruksi (3 Kolom spesifik)
-            df_export = pd.DataFrame(hasil_narasi)
-            df_export = df_export.rename(columns={
-                "RO": "Nomor RO",
-                "Nama RO": "Uraian Nama RO",
-                "Narasi": "Realisasi"
-            })
-            # Seleksi hanya 3 kolom yang diminta
-            df_export = df_export[["Nomor RO", "Uraian Nama RO", "Realisasi"]]
+            # Mengekstraksi Narasi Beserta Komentar yang Diketik Pengguna ke Dalam Tabel (4 Kolom)
+            list_export = []
+            for item in hasil_narasi:
+                ro_code = item["RO"]
+                # Memanggil nilai komentar (jika diketik) berdasarkan session_state Streamlit
+                user_comment = st.session_state.get(f"comment_{ro_code}", "")
+                
+                list_export.append({
+                    "Nomor RO": ro_code,
+                    "Uraian Nama RO": item["Nama RO"],
+                    "Realisasi": item["Narasi"],
+                    "Catatan / Komentar": user_comment
+                })
+                
+            df_export = pd.DataFrame(list_export)
+            # Menyusun urutan 4 Kolom secara rapi
+            df_export = df_export[["Nomor RO", "Uraian Nama RO", "Realisasi", "Catatan / Komentar"]]
             
             csv_data = df_export.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -352,7 +376,17 @@ if uploaded_file is not None:
                 use_container_width=True
             )
         with col_down2:
-            txt_data = "\n\n".join([item["Narasi"] for item in hasil_narasi])
+            txt_lines = []
+            for item in hasil_narasi:
+                ro_code = item["RO"]
+                c_text = st.session_state.get(f"comment_{ro_code}", "")
+                block = item["Narasi"]
+                # Gabungkan dengan catatan/komentar di file TXT jika ada
+                if c_text.strip():
+                    block += f"\nCatatan/Komentar: {c_text.strip()}"
+                txt_lines.append(block)
+                
+            txt_data = "\n\n".join(txt_lines)
             st.download_button(
                 "📄 Unduh Seluruh Teks (.TXT)",
                 data=txt_data,
