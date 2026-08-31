@@ -195,6 +195,7 @@ if uploaded_file is not None:
 
         temp_kegiatan = []
         current_ro = ""
+        current_nama_ro = ""  # Tambahan untuk Nama RO
         current_pcro_val = 0.0
         current_rvro_val = 0.0
         
@@ -227,6 +228,7 @@ if uploaded_file is not None:
                     
                     hasil_narasi.append({
                         "RO": current_ro,
+                        "Nama RO": current_nama_ro,
                         "Status": status_cat,
                         "Narasi": narasi
                     })
@@ -234,6 +236,7 @@ if uploaded_file is not None:
                 # Reset 
                 temp_kegiatan = []
                 current_ro = ""
+                current_nama_ro = ""
                 current_pcro_val = 0.0
                 current_rvro_val = 0.0
                 continue
@@ -241,6 +244,9 @@ if uploaded_file is not None:
             if val_ro and val_ro.lower() != 'nan':
                 if not current_ro:
                     current_ro = val_ro
+                    # Ekstrak Uraian Nama RO (biasanya di Kolom C / indeks ke-2)
+                    current_nama_ro = str(row.iloc[2]).strip() if len(row.values) > 2 and pd.notna(row.iloc[2]) else ""
+                    
                     if has_pcro:
                         try: current_pcro_val = float(row.iloc[col_pcro_idx]) 
                         except: current_pcro_val = 0.0
@@ -296,7 +302,16 @@ if uploaded_file is not None:
         col_down1, col_down2 = st.columns(2)
         
         with col_down1:
-            df_export = pd.DataFrame(hasil_narasi)[["RO", "Status", "Narasi"]]
+            # Mengubah format DataFrame agar sesuai instruksi (3 Kolom spesifik)
+            df_export = pd.DataFrame(hasil_narasi)
+            df_export = df_export.rename(columns={
+                "RO": "Nomor RO",
+                "Nama RO": "Uraian Nama RO",
+                "Narasi": "Realisasi"
+            })
+            # Seleksi hanya 3 kolom yang diminta
+            df_export = df_export[["Nomor RO", "Uraian Nama RO", "Realisasi"]]
+            
             csv_data = df_export.to_csv(index=False).encode('utf-8')
             st.download_button(
                 "📊 Unduh Rekap CSV (Excel)",
