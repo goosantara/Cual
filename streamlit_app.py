@@ -1,5 +1,27 @@
 import streamlit as st
 import pandas as pd
+import base64
+import os
+
+# ==============================================================================
+# 0. FUNGSI PEMBANTU UNTUK MEMUAT LOGO CUAL (BASE64)
+# ==============================================================================
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    return ""
+
+# Pastikan gambar "logo_cual.jpg" berada di folder yang sama dengan app.py
+logo_b64 = get_base64_image("logo_cual.jpg")
+
+if logo_b64:
+    logo_header_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">'
+    logo_sidebar_html = f'<div style="text-align: center; margin-bottom: 22px;"><img src="data:image/jpeg;base64,{logo_b64}" style="width: 110px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12);"></div>'
+else:
+    # Default emoji jika file gambar tidak ditemukan
+    logo_header_html = '✨'
+    logo_sidebar_html = ''
 
 # ==============================================================================
 # 1. KONFIGURASI HALAMAN & THEME (iOS 26 Glassmorphism Transparent Edition)
@@ -142,11 +164,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. HEADER UTAMA (GLASSMORPHISM)
+# 2. HEADER UTAMA (GLASSMORPHISM + LOGO CUAL)
 # ==============================================================================
-st.markdown("""
+st.markdown(f"""
     <div class="glass-header">
-        <h1 class="glass-title">✨ Automasi Capaian Rincian Output (RO)</h1>
+        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <div style="margin-right: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px;">
+                {logo_header_html}
+            </div>
+            <h1 class="glass-title" style="margin: 0;">Automasi Capaian Rincian Output (RO)</h1>
+        </div>
         <div class="glass-subtitle">
             Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander), Komentar, dan Copy 1-Klik.
         </div>
@@ -154,9 +181,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SIDEBAR UPLOAD & KONTROL
+# 3. SIDEBAR UPLOAD & KONTROL (+ LOGO CUAL)
 # ==============================================================================
 with st.sidebar:
+    if logo_sidebar_html:
+        st.markdown(logo_sidebar_html, unsafe_allow_html=True)
+        
     st.markdown("### 📱 Panel Pengunggahan")
     uploaded_file = st.file_uploader(
         "Pilih File Excel (.xlsx / .csv)", 
@@ -203,7 +233,6 @@ def is_realisasi_zero(val):
     if not val_str or val_str.lower() == 'nan':
         return True
     try:
-        # Hapus simbol % atau koma untuk pengecekan aman
         return float(val_str.replace('%', '').replace(',', '.')) == 0
     except:
         return True
@@ -239,7 +268,6 @@ if uploaded_file is not None:
                 if current_ro:
                     rvro_teks = f"{current_m_val} {current_n_val}".strip()
                     
-                    # Jika tidak ada kegiatan yang sudah berjalan
                     if len(temp_kegiatan) == 0 or (current_pcro_val == 0.0 and current_rvro_val == 0.0):
                         status_cat = "Belum Dimulai"
                         narasi = f"S.d. bulan {selected_month} {selected_year}, PCRO mencapai 0,00% dengan RVRO sebesar {rvro_teks} sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
@@ -268,7 +296,6 @@ if uploaded_file is not None:
                         "Narasi": narasi
                     })
                 
-                # Reset untuk iterasi batas selanjutnya
                 temp_kegiatan = []
                 current_ro = ""
                 current_nama_ro = ""
@@ -282,7 +309,6 @@ if uploaded_file is not None:
             if val_ro and val_ro.lower() != 'nan':
                 if not current_ro:
                     current_ro = val_ro
-                    # Ekstrak Uraian Nama RO 
                     current_nama_ro = str(row.iloc[2]).strip() if len(row.values) > 2 and pd.notna(row.iloc[2]) else ""
                     
                     if has_pcro:
@@ -354,16 +380,14 @@ if uploaded_file is not None:
                 icon = "⚪"
                 
             with st.expander(f"{icon} RO {item['RO']} — {item['Status']}"):
-                # 1. Menampilkan Teks Narasi yang Bisa Dicopy (Kotak Abu-Abu Terang)
                 st.code(item['Narasi'], language=None)
                 
-                # 2. Menampilkan Kotak Komentar Interaktif (Bisa Diketik Langsung & Ter-Update Otomatis)
                 comment_key = f"comment_{item['RO']}"
                 st.text_area(
                     "💬 Catatan / Komentar Tambahan:", 
                     key=comment_key, 
                     height=75,
-                    placeholder="Ketik komentar untuk RO ini (teks yang Anda tulis bisa diblok lalu di-copy, serta akan otomatis tersimpan dalam Excel saat diunduh)...",
+                    placeholder="Ketik komentar untuk RO ini (teks yang Anda tulis bisa diblok lalu di-copy, serta otomatis masuk ke Excel)...",
                     help="Gunakan (Ctrl+C / Cmd+C) untuk Copy teks di kolom ini."
                 )
 
@@ -375,11 +399,9 @@ if uploaded_file is not None:
         col_down1, col_down2 = st.columns(2)
         
         with col_down1:
-            # Mengekstraksi Narasi Beserta Komentar yang Diketik Pengguna ke Dalam Tabel (4 Kolom)
             list_export = []
             for item in hasil_narasi:
                 ro_code = item["RO"]
-                # Memanggil nilai komentar (jika diketik) berdasarkan session_state Streamlit
                 user_comment = st.session_state.get(f"comment_{ro_code}", "")
                 
                 list_export.append({
@@ -390,7 +412,6 @@ if uploaded_file is not None:
                 })
                 
             df_export = pd.DataFrame(list_export)
-            # Menyusun urutan 4 Kolom secara rapi
             df_export = df_export[["Nomor RO", "Uraian Nama RO", "Realisasi", "Catatan / Komentar"]]
             
             csv_data = df_export.to_csv(index=False).encode('utf-8')
@@ -407,7 +428,6 @@ if uploaded_file is not None:
                 ro_code = item["RO"]
                 c_text = st.session_state.get(f"comment_{ro_code}", "")
                 block = item["Narasi"]
-                # Gabungkan dengan catatan/komentar di file TXT jika ada
                 if c_text.strip():
                     block += f"\nCatatan/Komentar: {c_text.strip()}"
                 txt_lines.append(block)
