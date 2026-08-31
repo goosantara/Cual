@@ -87,7 +87,7 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* PERBAIKAN PENTING: Text Wrap Otomatis (Tanpa Scroll Samping) & Jarak Baris Rapat */
+    /* Text Wrap Otomatis (Tanpa Scroll Samping) & Jarak Baris Rapat */
     div[data-testid="stCodeBlock"] {
         background: rgba(255, 255, 255, 0.65) !important;
         backdrop-filter: blur(12px) !important;
@@ -112,7 +112,7 @@ st.markdown("""
         background: transparent !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
         font-size: 14px !important;
-        line-height: 1.38 !important; /* Jarak antar baris rapat & proporsional */
+        line-height: 1.38 !important;
         color: #1E293B !important;
     }
 
@@ -165,6 +165,21 @@ with st.sidebar:
         col_pcro_idx = st.number_input("Indeks Kolom PCRO (Contoh: M = 12)", value=12, min_value=0)
         col_rvro_idx = st.number_input("Indeks Kolom RVRO (Contoh: N = 13)", value=13, min_value=0)
 
+# Fungsi Pembantu Cek Tarel Nol (Misal: 0/1, 0/30, 0, dll)
+def is_tarel_zero(tarel_str):
+    t = str(tarel_str).strip()
+    if not t or t == "0" or t == "0.0":
+        return True
+    if "/" in t:
+        parts = t.split("/")
+        try:
+            num = float(parts[0].strip())
+            if num == 0:
+                return True
+        except:
+            pass
+    return False
+
 # ==============================================================================
 # 4. PEMROSESAN LOGIKA DATA & KALIMAT NARASI
 # ==============================================================================
@@ -190,25 +205,23 @@ if uploaded_file is not None:
             
             if val_ro.upper() == "BATAS":
                 if current_ro:
-                    # Susun kegiatan dengan list menu ke bawah (Bullet points)
-                    if len(temp_kegiatan) > 0:
-                        kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
-                    else:
-                        kegiatan_str = ""
-                        
-                    gap_val = abs(current_pcro_val - current_rvro_val)
-                    p_str = f"{current_pcro_val:.2f}".replace('.', ',')
-                    r_str = f"{current_rvro_val:.2f}".replace('.', ',')
-                    g_str = f"{gap_val:.2f}".replace('.', ',')
-
-                    # Konstruksi Status & Teks dengan Jarak Baris Rapat
-                    if current_pcro_val == 0.0 and current_rvro_val == 0.0:
+                    # Jika tidak ada kegiatan yang sudah berjalan (semua tarel = 0) ATAU PCRO & RVRO = 0
+                    if len(temp_kegiatan) == 0 or (current_pcro_val == 0.0 and current_rvro_val == 0.0):
                         status_cat = "Belum Dimulai"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
+                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 0,00% dengan RVRO sebesar 0,00% sehingga terdapat gap sebesar 0,00%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
                     elif current_pcro_val >= 100.0:
+                        kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
+                        gap_val = abs(current_pcro_val - current_rvro_val)
+                        r_str = f"{current_rvro_val:.2f}".replace('.', ',')
+                        g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Selesai 100%"
                         narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
                     else:
+                        kegiatan_str = "\n".join([f"- {keg}" for keg in temp_kegiatan])
+                        gap_val = abs(current_pcro_val - current_rvro_val)
+                        p_str = f"{current_pcro_val:.2f}".replace('.', ',')
+                        r_str = f"{current_rvro_val:.2f}".replace('.', ',')
+                        g_str = f"{gap_val:.2f}".replace('.', ',')
                         status_cat = "Dalam Proses"
                         narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
                     
@@ -239,7 +252,8 @@ if uploaded_file is not None:
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    if not tarel.startswith("0/") and tarel != "0":
+                    # Hanya masukkan kegiatan yang hasil pembagian tarel-nya > 0 (bukan 0/X atau 0)
+                    if not is_tarel_zero(tarel):
                         temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
 
         # ==============================================================================
