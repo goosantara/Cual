@@ -11,10 +11,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS: Ultra-Modern iOS Glassmorphism & Accordion Wrapper (Expander)
+# Custom CSS: Ultra-Modern iOS Glassmorphism, Text Wrap & Jarak Baris Rapat
 st.markdown("""
     <style>
-    /* Background Animasi Mesh/Liquid untuk memamerkan efek transparan dari kaca (Glass) */
+    /* Background Animasi Mesh/Liquid */
     .stApp {
         background: radial-gradient(circle at 15% 50%, #D1FAE5 0%, transparent 50%),
                     radial-gradient(circle at 85% 30%, #FEF3C7 0%, transparent 50%),
@@ -24,32 +24,32 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
     }
 
-    /* Kustomisasi Wrapper Accordion / Expander agar bergaya iOS Kaca Transparan */
+    /* Kustomisasi Wrapper Accordion / Expander */
     [data-testid="stExpander"] {
-        background: rgba(255, 255, 255, 0.45) !important; /* Efek transparan */
+        background: rgba(255, 255, 255, 0.45) !important;
         backdrop-filter: blur(24px) saturate(200%) !important;
         -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-radius: 24px !important;
+        border-radius: 20px !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04) !important;
-        margin-bottom: 18px !important;
+        margin-bottom: 14px !important;
         overflow: hidden !important;
-        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+        transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
     }
     [data-testid="stExpander"]:hover {
         background: rgba(255, 255, 255, 0.7) !important;
-        box-shadow: 0 14px 45px 0 rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 12px 35px 0 rgba(0, 0, 0, 0.07) !important;
         transform: translateY(-2px);
     }
     
-    /* Header (Judul Baris) pada Expander Buka-Tutup */
+    /* Header pada Expander Buka-Tutup */
     [data-testid="stExpander"] summary {
-        padding: 20px 24px !important;
-        border-radius: 24px !important;
+        padding: 16px 22px !important;
+        border-radius: 20px !important;
     }
     [data-testid="stExpander"] summary p {
         font-weight: 700 !important;
-        font-size: 16px !important;
+        font-size: 15px !important;
         color: #0F172A !important;
         display: flex;
         align-items: center;
@@ -57,7 +57,7 @@ st.markdown("""
     
     /* Container/Ruang Dalam Expander */
     [data-testid="stExpanderDetails"] {
-        padding: 0px 24px 24px 24px !important;
+        padding: 0px 20px 18px 20px !important;
     }
 
     /* Header Panel Kaca Utama (Atas) */
@@ -66,58 +66,66 @@ st.markdown("""
         backdrop-filter: blur(30px) saturate(180%);
         -webkit-backdrop-filter: blur(30px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.7);
-        border-radius: 30px;
-        padding: 30px 40px;
+        border-radius: 26px;
+        padding: 26px 36px;
         color: #0F172A;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-        margin-bottom: 30px;
+        margin-bottom: 24px;
     }
     .glass-title {
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 800;
         letter-spacing: -0.8px;
-        margin: 0 0 10px 0;
+        margin: 0 0 8px 0;
         background: linear-gradient(90deg, #047857, #D97706);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     .glass-subtitle {
-        font-size: 15px;
+        font-size: 14px;
         color: #475569;
         font-weight: 500;
     }
 
-    /* CSS Text Wrap pada Kotak Code agar Narasi Tidak Scroll Samping + Glassmorphism box */
+    /* PERBAIKAN PENTING: Text Wrap Otomatis (Tanpa Scroll Samping) & Jarak Baris Rapat */
     div[data-testid="stCodeBlock"] {
-        background: rgba(255, 255, 255, 0.6) !important;
-        backdrop-filter: blur(10px) !important;
-        border-radius: 18px !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        padding: 4px !important;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+        background: rgba(255, 255, 255, 0.65) !important;
+        backdrop-filter: blur(12px) !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(255, 255, 255, 0.85) !important;
+        padding: 2px !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
     }
-    div[data-testid="stCodeBlock"] code, 
     div[data-testid="stCodeBlock"] pre {
         white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        overflow-x: hidden !important;
+        margin: 0 !important;
+        padding: 14px !important;
+    }
+    div[data-testid="stCodeBlock"] code {
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
         word-break: break-word !important;
         overflow-x: hidden !important;
         background: transparent !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-        font-size: 15px !important;
-        line-height: 1.7 !important;
+        font-size: 14px !important;
+        line-height: 1.38 !important; /* Jarak antar baris rapat & proporsional */
         color: #1E293B !important;
     }
 
-    /* Status Badges di luar Accordion Header */
+    /* Status Badges */
     .ios-badge {
         display: inline-block;
-        padding: 6px 14px;
+        padding: 5px 12px;
         border-radius: 30px;
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.5px;
         text-transform: uppercase;
-        margin-left: 12px;
+        margin-left: 10px;
     }
     .ios-badge-success { background: rgba(16, 185, 129, 0.15); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); }
     .ios-badge-progress { background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.3); }
@@ -193,7 +201,7 @@ if uploaded_file is not None:
                     r_str = f"{current_rvro_val:.2f}".replace('.', ',')
                     g_str = f"{gap_val:.2f}".replace('.', ',')
 
-                    # Konstruksi Status & Teks
+                    # Konstruksi Status & Teks dengan Jarak Baris Rapat
                     if current_pcro_val == 0.0 and current_rvro_val == 0.0:
                         status_cat = "Belum Dimulai"
                         narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} belum dimulai."
@@ -202,7 +210,7 @@ if uploaded_file is not None:
                         narasi = f"S.d. bulan Agustus 2026, PCRO mencapai 100,00% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan seluruh kegiatan pada RO {current_ro} telah dilakukan, yaitu:\n{kegiatan_str}"
                     else:
                         status_cat = "Dalam Proses"
-                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\n\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
+                        narasi = f"S.d. bulan Agustus 2026, PCRO mencapai {p_str}% dengan RVRO sebesar {r_str}% sehingga terdapat gap sebesar {g_str}%, dikarenakan sudah dilakukan:\n{kegiatan_str}\nSedangkan kegiatan lain pada RO {current_ro} belum dimulai."
                     
                     hasil_narasi.append({
                         "RO": current_ro,
@@ -256,7 +264,6 @@ if uploaded_file is not None:
         # 6. TAMPILAN WRAPPER EXPANDER (AKORDION iOS KACA) & AUTO COPAS
         # ==============================================================================
         for item in data_tampil:
-            # Penentuan Emotikon Status untuk Judul Baris
             if item['Status'] == 'Selesai 100%': 
                 icon = "🟢"
             elif item['Status'] == 'Dalam Proses': 
@@ -264,9 +271,7 @@ if uploaded_file is not None:
             else: 
                 icon = "⚪"
                 
-            # Menggunakan st.expander untuk melipat tulisan ke dalam kotak (Accordion)
             with st.expander(f"{icon} RO {item['RO']} — {item['Status']}"):
-                # Text Area/Code Block di dalam expander dengan fitur Auto-Copy & Baris Wrap
                 st.code(item['Narasi'], language=None)
 
         # ==============================================================================
