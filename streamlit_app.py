@@ -20,7 +20,7 @@ if logo_b64:
     logo_sidebar_html = f'<div style="text-align: center; margin-bottom: 22px;"><img src="data:image/jpeg;base64,{logo_b64}" style="width: 110px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.12);"></div>'
 else:
     # Default emoji jika file gambar tidak ditemukan
-    logo_header_html = '✨'
+    logo_header_html = '🐴'
     logo_sidebar_html = ''
 
 # ==============================================================================
@@ -28,7 +28,7 @@ else:
 # ==============================================================================
 st.set_page_config(
     page_title="iOS Vision Narasi RO",
-    page_icon="✨",
+    page_icon="🐴",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -175,7 +175,7 @@ st.markdown(f"""
             <h1 class="glass-title" style="margin: 0;">Automasi Capaian Rincian Output (RO)</h1>
         </div>
         <div class="glass-subtitle">
-            Antarmuka Kaca Transparan Tipe iOS dengan Fitur Kotak Lipat (Expander), Komentar, dan Copy 1-Klik.
+            Selamat Datang Tuan Muda Egoo, Awali Hari dengan Bismillah...
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -198,7 +198,7 @@ with st.sidebar:
     selected_month = st.selectbox(
         "Bulan Laporan",
         ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
-        index=7 # Default index 7 adalah Agustus
+        index=1 # Default index 1 adalah Januari
     )
     selected_year = st.text_input("Tahun Laporan", value="2026")
 
@@ -230,7 +230,7 @@ def is_tarel_zero(tarel_str):
 # Fungsi Pembantu Cek Persentase Realisasi Nol (Kolom I)
 def is_realisasi_zero(val):
     val_str = str(val).strip()
-    if not val_str or val_str.lower() == 'nan':
+    if not val_str or val_str.lower() == '0':
         return True
     try:
         return float(val_str.replace('%', '').replace(',', '.')) == 0
@@ -344,13 +344,11 @@ if uploaded_file is not None:
                 satuan = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
                 
                 if keg and keg.lower() != 'nan' and tarel and tarel.lower() != 'nan':
-                    # Pengecekan agar tarel yang kosong "/" tidak dimasukkan ke dalam uraian
-                    tarel_clean = tarel.replace(" ", "")
-                    if tarel_clean != "/":
-                        if is_tarel_zero(tarel):
-                            current_has_unstarted = True
-                        else:
-                            temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
+                    if len(row.values) > 8 and is_realisasi_zero(row.iloc[8]):
+                        current_has_unstarted = True
+
+                    if not is_tarel_zero(tarel):
+                        temp_kegiatan.append(f"{keg} ({tarel} {satuan})")
 
         # ==============================================================================
         # 5. FILTER & METRIK DASHBOARD
